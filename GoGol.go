@@ -78,18 +78,20 @@ func (b *Board) Neighbours(x, y int) int {
 }
 
 func (b *Board) Update() {
+    temp := b.cells
     for x := 0; x < BoardX; x++ {
         for y := 0; y < BoardY; y++ {
             neighbours := b.Neighbours(x, y)
             if b.Get(x, y) { // check if the cell is alive
                 if neighbours != 2 && neighbours != 3 {
-                    b.Set(x, y, false)
+                    temp[x][y] = false
                 }
             } else if neighbours == 3 {
-                b.Set(x, y, true)
+                temp[x][y] = true
             }
         }
     }
+    b.cells = temp
 }
 
 func (b *Board) Draw() {

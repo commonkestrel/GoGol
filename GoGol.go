@@ -68,7 +68,6 @@ func (b *Board) Neighbours(x, y int) int {
     if b.Get(max_x, min_y) {neighbours++}
 
     if b.Get(min_x, y) {neighbours++}
-    if b.Get(x, y) {neighbours++}
     if b.Get(max_x, y) {neighbours++}
 
     if b.Get(min_x, max_y) {neighbours++}

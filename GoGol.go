@@ -1,33 +1,34 @@
 package main
 
 import (
-	"image"
-	"os"
-	"path"
-	"runtime"
-	"time"
+    "image"
+    "os"
+    "path"
+    "runtime"
+    "time"
 
-	_ "image/png"
+    _ "image/png"
 
-	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/imdraw"
-	"github.com/faiface/pixel/pixelgl"
-	"golang.org/x/image/colornames"
+    "github.com/faiface/pixel"
+    "github.com/faiface/pixel/imdraw"
+    "github.com/faiface/pixel/pixelgl"
+    "golang.org/x/image/colornames"
 )
 
 const (
     SCREENX, SCREENY = 960, 540
-    BoardX, BoardY = 48, 27 // resolution/20
+    BOARDX, BOARDY   = 48, 27 // resolution/20
+    UPDATETIME = time.Second/4
 )
 
 var (
-    win *pixelgl.Window
-    imd *imdraw.IMDraw
+    win     *pixelgl.Window
+    imd     *imdraw.IMDraw
     running bool
 )
 
 type Board struct {
-    cells [BoardX][BoardY]bool
+    cells [BOARDX][BOARDY]bool
 }
 
 func NewBoard() *Board {
@@ -43,44 +44,60 @@ func (b *Board) Get(x, y int) bool {
 }
 
 func (b *Board) Neighbours(x, y int) int {
-    // loop min and max if they are outside the bounds            
-    min_y := y-1
-    max_y := y+1
+    // loop min and max if they are outside the bounds
+    min_y := y - 1
+    max_y := y + 1
     if min_y < 0 {
-        min_y = BoardY-1
-    } else if max_y >= BoardY {
+        min_y = BOARDY - 1
+    } else if max_y >= BOARDY {
         max_y = 0
     }
 
-    min_x := x-1
-    max_x := x+1
+    min_x := x - 1
+    max_x := x + 1
     if min_x < 0 {
-        min_x = BoardX-1
-    } else if max_x >= BoardX {
+        min_x = BOARDX - 1
+    } else if max_x >= BOARDX {
         max_x = 0
     }
 
     // check each neighbor, incrementing count if alive
     var neighbours int
 
-    if b.Get(min_x, min_y) {neighbours++}
-    if b.Get(x, min_y) {neighbours++}
-    if b.Get(max_x, min_y) {neighbours++}
+    if b.Get(min_x, min_y) {
+        neighbours++
+    }
+    if b.Get(x, min_y) {
+        neighbours++
+    }
+    if b.Get(max_x, min_y) {
+        neighbours++
+    }
 
-    if b.Get(min_x, y) {neighbours++}
-    if b.Get(max_x, y) {neighbours++}
+    if b.Get(min_x, y) {
+        neighbours++
+    }
+    if b.Get(max_x, y) {
+        neighbours++
+    }
 
-    if b.Get(min_x, max_y) {neighbours++}
-    if b.Get(x, max_y) {neighbours++}
-    if b.Get(max_x, y) {neighbours++}
+    if b.Get(min_x, max_y) {
+        neighbours++
+    }
+    if b.Get(x, max_y) {
+        neighbours++
+    }
+    if b.Get(max_x, max_y) {
+        neighbours++
+    }
 
     return neighbours
 }
 
 func (b *Board) Update() {
     temp := b.cells
-    for x := 0; x < BoardX; x++ {
-        for y := 0; y < BoardY; y++ {
+    for x := 0; x < BOARDX; x++ {
+        for y := 0; y < BOARDY; y++ {
             neighbours := b.Neighbours(x, y)
             if b.Get(x, y) { // check if the cell is alive
                 if neighbours != 2 && neighbours != 3 {
@@ -96,8 +113,8 @@ func (b *Board) Update() {
 
 func (b *Board) Draw() {
     imd.Color = colornames.White
-    for x := 0; x < BoardX; x++ {
-        for y := 0; y < BoardY; y++ {
+    for x := 0; x < BOARDX; x++ {
+        for y := 0; y < BOARDY; y++ {
             if b.Get(x, y) {
                 imd.Push(pixel.V(float64(x*20), float64(y*20)))
                 imd.Push(pixel.V(float64(x*20)+20, float64(y*20)+20))
@@ -138,10 +155,10 @@ func run() {
     }
 
     cfg := pixelgl.WindowConfig{
-        Title:     "Go Pixel",
-        Bounds:    pixel.R(0, 0, SCREENX, SCREENY),
+        Title:  "Go Pixel",
+        Bounds: pixel.R(0, 0, SCREENX, SCREENY),
         //Maximized: true,
-        Icon:      []pixel.Picture{icon},
+        Icon:  []pixel.Picture{icon},
         VSync: true,
     }
     win, err = pixelgl.NewWindow(cfg)
@@ -150,9 +167,10 @@ func run() {
     }
 
     imd = imdraw.New(nil)
-    
-    ticker := time.NewTicker(time.Second/2)
+
     board := NewBoard()
+
+    update := time.Now()
 
     for !win.Closed() {
         imd.Clear()
@@ -165,18 +183,16 @@ func run() {
             running = !running
         }
 
-        if running {
-            select {
-            case <-ticker.C:
-                board.Update()
-            default:
-            }
-        } else if win.JustPressed(pixelgl.MouseButtonLeft) {
+        if running && time.Since(update) >= UPDATETIME {
+            board.Update()
+            update = time.Now()
+        } 
+        if !running && win.JustPressed(pixelgl.MouseButtonLeft) {
             pos := win.MousePosition()
             cell_x, cell_y := int(pos.X/20), int(pos.Y/20)
             board.Set(cell_x, cell_y, !board.Get(cell_x, cell_y))
         }
-            
+
         board.Draw()
 
         win.Clear(colornames.Black)

@@ -1,4 +1,4 @@
-module github.com/jibble330/GoGol
+module github.com/commonkestrel/GoGol
 
 go 1.19
 
